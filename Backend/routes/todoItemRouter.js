@@ -1,10 +1,8 @@
-// External Module
 const express = require("express");
 const todoItemRouter = express.Router();
-
-// Local Module
 const todoItemController = require("../controllers/todoItemController");
 
+// Todo Routes
 todoItemRouter.get("/", todoItemController.getTodoItems);
 todoItemRouter.post("/", todoItemController.createTodoItem);
 todoItemRouter.delete("/completed", todoItemController.deleteCompletedTodoItems);
@@ -13,3 +11,4 @@ todoItemRouter.delete("/:id", todoItemController.deleteTodoItem);
 todoItemRouter.put("/:id/completed", todoItemController.markCompleted);
 
 module.exports = todoItemRouter;
+
