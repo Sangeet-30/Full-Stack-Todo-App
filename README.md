@@ -1,22 +1,35 @@
 # TodoFlow
 
-A full-stack task management application built with React, Vite, Tailwind CSS, Node.js, Express, and MongoDB. TodoFlow provides secure user authentication, user-specific task isolation, due date management, real-time search, category filtering, and progress tracking.
+A full-stack task management application built with React, Tailwind CSS, Node.js, Express, and MongoDB. Manage tasks, set due dates, track progress, and keep your tasks private with session-based authentication.
+
+## Live Demo
+
+**[🚀 Open TodoFlow](https://full-stack-todo-app-sigma-hazel.vercel.app/)**
+
+Try the deployed application and explore task management features.
+
+| Resource | Link |
+|---|---|
+| **Live Application** | [TodoFlow on Vercel](https://full-stack-todo-app-sigma-hazel.vercel.app/) |
+| **GitHub Repository** | [Full-Stack-Todo-App](https://github.com/Sangeet-30/Full-Stack-Todo-App) |
+| **Backend API** | [TodoFlow API on Render](https://todo-flow-backend-wndu.onrender.com) |
 
 ## Features
 
-- **Authentication:** User registration, login, logout, and persistent cookie-based sessions.
-- **User-Specific Todos:** Isolated task lists scoped strictly to each authenticated account.
-- **Todo CRUD:** Create, view, edit, and delete tasks.
-- **Completion Tracking:** Toggle task completion status and bulk-clear completed items.
-- **Due Date Validation:** Mandatory due dates, past-date prevention, and calendar-day status badges.
-- **Search & Filtering:** Real-time search by task name and filtering by All, Active, and Completed.
-- **Progress Tracking:** Dynamic completion percentage and active task counters.
+- **Authentication:** Registration, login, logout, and persistent cookie-based sessions.
+- **Private Tasks:** Each user can access only their own tasks.
+- **Task Management:** Create, edit, delete, and complete tasks.
+- **Due Dates:** Required due dates with past-date validation.
+- **Search & Filters:** Search by task name and filter All, Active, and Completed tasks.
+- **Progress Tracking:** Completion percentage and active task counters.
 
 ## Tech Stack
 
 - **Frontend:** React 19, Vite, Tailwind CSS 4, React Icons
 - **Backend:** Node.js, Express 5, express-session, connect-mongo
-- **Database & Security:** MongoDB (Atlas), Mongoose, bcryptjs
+- **Database:** MongoDB Atlas, Mongoose
+- **Authentication:** bcryptjs, cookie-based sessions
+- **Deployment:** Vercel, Render
 
 ## Project Structure
 
@@ -47,11 +60,11 @@ Full-Stack-Todo-App/
 
 ### Prerequisites
 
-- Node.js 20 or higher
+- Node.js 20+
 - npm
-- Local MongoDB instance or MongoDB Atlas account
+- MongoDB local instance or MongoDB Atlas account
 
-### 1. Backend Setup
+### Backend
 
 ```bash
 cd Backend
@@ -64,21 +77,19 @@ Configure `Backend/.env`:
 ```env
 PORT=3000
 MONGO_URL=mongodb://127.0.0.1:27017/todo_app
-SESSION_SECRET=your_secure_random_secret_at_least_32_characters
+SESSION_SECRET=your_secure_random_secret
 CORS_ORIGIN=http://localhost:5173
 ```
 
-Start the backend development server:
+Start the backend:
 
 ```bash
 npm run dev
 ```
 
-The backend server runs at `http://localhost:3000`.
+### Frontend
 
-### 2. Frontend Setup
-
-Open a separate terminal:
+In a separate terminal:
 
 ```bash
 cd Frontend
@@ -93,57 +104,50 @@ VITE_API_BASE_URL=http://localhost:3000/api/todo
 VITE_AUTH_BASE_URL=http://localhost:3000/api/auth
 ```
 
-Start the frontend development server:
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open [http://localhost:5173](http://localhost:5173).
 
 ## Deployment
 
-TodoFlow is designed for deployment across MongoDB Atlas, Render, and Vercel.
+### MongoDB Atlas
 
-### 1. MongoDB Atlas
+Create a database and user, configure network access, and add the connection string to `MONGO_URL` on Render.
 
-1. Create a cluster in MongoDB Atlas.
-2. Create a database user with read/write permissions.
-3. Allow network access for your hosting environment.
-4. Copy the connection string for the backend `MONGO_URL`.
-
-### 2. Backend on Render
-
-Deploy as a **Web Service** connected to your repository:
+### Render — Backend
 
 - **Root Directory:** `Backend`
 - **Build Command:** `npm install`
 - **Start Command:** `npm start`
 
-Required Environment Variables:
+Environment variables:
 
 ```env
 NODE_ENV=production
 MONGO_URL=your_mongodb_atlas_connection_string
-SESSION_SECRET=your_secure_random_secret_min_32_characters
+SESSION_SECRET=your_secure_random_secret
 CORS_ORIGIN=https://your-frontend.vercel.app
 ```
 
-### 3. Frontend on Vercel
-
-Import the repository into Vercel:
+### Vercel — Frontend
 
 - **Root Directory:** `Frontend`
-- **Framework Preset:** Vite
+- **Framework:** Vite
 - **Build Command:** `npm run build`
 - **Output Directory:** `dist`
 
-Required Environment Variables:
+Environment variables:
 
 ```env
 VITE_API_BASE_URL=https://your-backend.onrender.com/api/todo
 VITE_AUTH_BASE_URL=https://your-backend.onrender.com/api/auth
 ```
+
+Replace example URLs with your actual deployment URLs.
 
 ## API Endpoints
 
@@ -151,30 +155,28 @@ VITE_AUTH_BASE_URL=https://your-backend.onrender.com/api/auth
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Log in and establish session |
-| `POST` | `/api/auth/logout` | Log out and destroy session |
-| `GET` | `/api/auth/me` | Fetch authenticated user profile |
+| `POST` | `/api/auth/register` | Register a user |
+| `POST` | `/api/auth/login` | Log in |
+| `POST` | `/api/auth/logout` | Log out |
+| `GET` | `/api/auth/me` | Get the current user |
 
 ### Todos
 
-All Todo endpoints require an authenticated session.
+All todo endpoints require an authenticated session.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/todo` | Retrieve authenticated user's todos |
-| `POST` | `/api/todo` | Create a new todo |
-| `PATCH` | `/api/todo/:id` | Update an existing todo |
-| `PUT` | `/api/todo/:id/completed` | Toggle completion status |
-| `DELETE` | `/api/todo/:id` | Delete a single todo |
-| `DELETE` | `/api/todo/completed` | Clear all completed todos |
+| `GET` | `/api/todo` | Get the user's tasks |
+| `POST` | `/api/todo` | Create a task |
+| `PATCH` | `/api/todo/:id` | Update a task |
+| `PUT` | `/api/todo/:id/completed` | Toggle completion |
+| `DELETE` | `/api/todo/:id` | Delete a task |
+| `DELETE` | `/api/todo/completed` | Clear completed tasks |
 
 ### Health Check
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Service and database connectivity status |
+`GET /api/health` — Check backend service health.
 
 ## Author
 
-**Sangeet** — [GitHub Profile](https://github.com/Sangeet-30)
+**Sangeet** · [GitHub Profile](https://github.com/Sangeet-30)
