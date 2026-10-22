@@ -1,26 +1,22 @@
-# TodoFlow — Full-Stack Todo App
+# TodoFlow
 
-A full-stack Todo application built with **React 19, Tailwind CSS, Node.js, Express, and MongoDB**. TodoFlow helps users organize daily tasks with secure authentication, task management, search, filters, and progress tracking.
+A full-stack task management application built with React, Vite, Tailwind CSS, Node.js, Express, and MongoDB. TodoFlow provides secure user authentication, user-specific task isolation, due date management, real-time search, category filtering, and progress tracking.
 
 ## Features
 
-- **Authentication:** User registration, login, logout, and persistent sessions.
-- **Secure Access:** Password hashing and user-specific todo data isolation.
-- **Task Management:** Create, view, edit, complete, and delete tasks.
-- **Due Dates:** Required due dates, past-date prevention, and timezone-safe date handling.
-- **Search & Filters:** Search tasks and filter by All, Active, and Completed.
-- **Progress Tracking:** Completion statistics and progress indicators.
-- **Responsive UI:** Clean interface for desktop, tablet, and mobile.
-- **Session Management:** MongoDB-backed sessions and protected API endpoints.
+- **Authentication:** User registration, login, logout, and persistent cookie-based sessions.
+- **User-Specific Todos:** Isolated task lists scoped strictly to each authenticated account.
+- **Todo CRUD:** Create, view, edit, and delete tasks.
+- **Completion Tracking:** Toggle task completion status and bulk-clear completed items.
+- **Due Date Validation:** Mandatory due dates, past-date prevention, and calendar-day status badges.
+- **Search & Filtering:** Real-time search by task name and filtering by All, Active, and Completed.
+- **Progress Tracking:** Dynamic completion percentage and active task counters.
 
 ## Tech Stack
 
-| Frontend | Backend | Database & Security |
-|---|---|---|
-| React 19 | Node.js | MongoDB Atlas |
-| Vite | Express 5 | Mongoose |
-| Tailwind CSS 4 | REST API | bcryptjs |
-| React Icons | Express Session | Connect Mongo |
+- **Frontend:** React 19, Vite, Tailwind CSS 4, React Icons
+- **Backend:** Node.js, Express 5, express-session, connect-mongo
+- **Database & Security:** MongoDB (Atlas), Mongoose, bcryptjs
 
 ## Project Structure
 
@@ -44,7 +40,6 @@ Full-Stack-Todo-App/
 │   ├── tests/
 │   ├── .env.example
 │   └── package.json
-├── .gitignore
 └── README.md
 ```
 
@@ -52,18 +47,11 @@ Full-Stack-Todo-App/
 
 ### Prerequisites
 
-- Node.js 20 or later
+- Node.js 20 or higher
 - npm
-- MongoDB local instance or MongoDB Atlas
+- Local MongoDB instance or MongoDB Atlas account
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/Sangeet-30/Full-Stack-Todo-App.git
-cd Full-Stack-Todo-App
-```
-
-### 2. Configure the backend
+### 1. Backend Setup
 
 ```bash
 cd Backend
@@ -76,27 +64,21 @@ Configure `Backend/.env`:
 ```env
 PORT=3000
 MONGO_URL=mongodb://127.0.0.1:27017/todo_app
-SESSION_SECRET=your_random_secret_of_at_least_32_characters
+SESSION_SECRET=your_secure_random_secret_at_least_32_characters
 CORS_ORIGIN=http://localhost:5173
 ```
 
-Generate a session secret on Linux with:
-
-```bash
-openssl rand -base64 32
-```
-
-Start the backend:
+Start the backend development server:
 
 ```bash
 npm run dev
 ```
 
-The backend runs at `http://localhost:3000`.
+The backend server runs at `http://localhost:3000`.
 
-### 3. Configure the frontend
+### 2. Frontend Setup
 
-Open a second terminal:
+Open a separate terminal:
 
 ```bash
 cd Frontend
@@ -111,7 +93,7 @@ VITE_API_BASE_URL=http://localhost:3000/api/todo
 VITE_AUTH_BASE_URL=http://localhost:3000/api/auth
 ```
 
-Start the frontend:
+Start the frontend development server:
 
 ```bash
 npm run dev
@@ -121,68 +103,47 @@ Open `http://localhost:5173` in your browser.
 
 ## Deployment
 
-TodoFlow can be deployed using **MongoDB Atlas, Render, and Vercel**.
+TodoFlow is designed for deployment across MongoDB Atlas, Render, and Vercel.
 
 ### 1. MongoDB Atlas
 
-1. Create a MongoDB Atlas cluster.
-2. Create a database user with appropriate database permissions.
-3. Configure network access for your backend hosting environment.
-4. Copy your MongoDB connection URI for the backend environment.
+1. Create a cluster in MongoDB Atlas.
+2. Create a database user with read/write permissions.
+3. Allow network access for your hosting environment.
+4. Copy the connection string for the backend `MONGO_URL`.
 
-### 2. Deploy the backend on Render
+### 2. Backend on Render
 
-Create a Web Service connected to your GitHub repository.
+Deploy as a **Web Service** connected to your repository:
 
-| Setting | Value |
-|---|---|
-| Root Directory | `Backend` |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
+- **Root Directory:** `Backend`
+- **Build Command:** `npm install`
+- **Start Command:** `npm start`
 
-Set these environment variables in Render:
+Required Environment Variables:
 
 ```env
 NODE_ENV=production
-MONGO_URL=your_mongodb_atlas_connection_uri
-SESSION_SECRET=your_secure_random_secret
-CORS_ORIGIN=https://your-project.vercel.app
+MONGO_URL=your_mongodb_atlas_connection_string
+SESSION_SECRET=your_secure_random_secret_min_32_characters
+CORS_ORIGIN=https://your-frontend.vercel.app
 ```
 
-Use the actual Vercel frontend origin for `CORS_ORIGIN`. Configure production session cookies to use HTTPS and the appropriate cross-site cookie settings.
+### 3. Frontend on Vercel
 
-After deployment, copy the Render backend URL.
+Import the repository into Vercel:
 
-### 3. Deploy the frontend on Vercel
+- **Root Directory:** `Frontend`
+- **Framework Preset:** Vite
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
 
-Import the repository into Vercel and configure:
-
-| Setting | Value |
-|---|---|
-| Root Directory | `Frontend` |
-| Framework Preset | Vite |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-
-Set these environment variables in Vercel:
+Required Environment Variables:
 
 ```env
 VITE_API_BASE_URL=https://your-backend.onrender.com/api/todo
 VITE_AUTH_BASE_URL=https://your-backend.onrender.com/api/auth
 ```
-
-Replace the example URLs with your actual Render backend URL. Redeploy the frontend after changing environment variables.
-
-### 4. Verify the deployment
-
-After both services are deployed, test:
-
-- User registration and login.
-- Session persistence after refreshing the browser.
-- Logout.
-- Creating, updating, completing, and deleting todos.
-- Isolation between different user accounts.
-- The backend health endpoint at `/api/health`.
 
 ## API Endpoints
 
@@ -190,71 +151,30 @@ After both services are deployed, test:
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Register a user |
-| POST | `/api/auth/login` | Log in |
-| POST | `/api/auth/logout` | Log out |
-| GET | `/api/auth/me` | Get the current user |
+| `POST` | `/api/auth/register` | Register a new user |
+| `POST` | `/api/auth/login` | Log in and establish session |
+| `POST` | `/api/auth/logout` | Log out and destroy session |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile |
 
 ### Todos
 
+All Todo endpoints require an authenticated session.
+
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/todo` | Get the authenticated user's todos |
-| POST | `/api/todo` | Create a todo |
-| PATCH | `/api/todo/:id` | Update an active todo |
-| PUT | `/api/todo/:id/completed` | Toggle completion |
-| DELETE | `/api/todo/:id` | Delete a todo |
-| DELETE | `/api/todo/completed` | Clear completed todos |
-
-All todo endpoints require an authenticated session.
+| `GET` | `/api/todo` | Retrieve authenticated user's todos |
+| `POST` | `/api/todo` | Create a new todo |
+| `PATCH` | `/api/todo/:id` | Update an existing todo |
+| `PUT` | `/api/todo/:id/completed` | Toggle completion status |
+| `DELETE` | `/api/todo/:id` | Delete a single todo |
+| `DELETE` | `/api/todo/completed` | Clear all completed todos |
 
 ### Health Check
 
-```text
-GET /api/health
-```
-
-## Run Tests
-
-Backend:
-
-```bash
-cd Backend
-npm test
-```
-
-Frontend:
-
-```bash
-cd Frontend
-npm test
-npm run lint
-npm run build
-```
-
-Latest reported results:
-- Backend: 44 tests passed.
-- Frontend: 20 tests passed.
-- ESLint: 0 errors and 0 warnings.
-- Production build: successful.
-
-## Security
-
-- Passwords are hashed before storage.
-- Todo operations are scoped to the authenticated user.
-- Sessions are stored in MongoDB.
-- Production deployments should use HTTPS and a strong session secret.
-- CORS should allow only the intended frontend origin.
-- Never commit `.env` files or expose database credentials.
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Service and database connectivity status |
 
 ## Author
 
-**Sangeet**
-
-GitHub: [Sangeet-30](https://github.com/Sangeet-30)
-
----
-
-*Full-Stack Todo App · Built with React 19, Tailwind CSS, Express & MongoDB*
-
-*Built by Sangeet · © 2026 TodoFlow. All rights reserved.*
+**Sangeet** — [GitHub Profile](https://github.com/Sangeet-30)

@@ -36,11 +36,9 @@ if (isProduction) {
 }
 
 // CORS Configuration
-const defaultOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
-const rawCorsOrigin = process.env.CORS_ORIGIN;
-const allowedOrigins = rawCorsOrigin
-  ? rawCorsOrigin.split(",").map((o) => o.trim())
-  : defaultOrigins;
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim());
 
 app.use(
   cors({
