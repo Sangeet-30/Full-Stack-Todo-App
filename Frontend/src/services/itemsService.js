@@ -1,8 +1,18 @@
 import { extractCalendarDate } from "../utils/dateUtils";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/todo"
-).replace(/\/+$/, "");
+const getApiBaseUrl = () => {
+  const envApi =
+    typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL;
+  if (envApi) {
+    return envApi.replace(/\/+$/, "");
+  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.PROD) {
+    throw new Error(
+      "Missing API configuration: VITE_API_BASE_URL is required in production.",
+    );
+  }
+  return "http://localhost:3000/api/todo";
+};
 
 const readResponse = async (response) => {
   if (!response.ok) {
@@ -15,7 +25,9 @@ const readResponse = async (response) => {
     } catch {
       // If response body is not JSON, retain default status message
     }
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {
@@ -38,7 +50,10 @@ const mapServerItemToLocalItem = (serverItem) => {
 
 export const getItemsFromServer = async () => {
   try {
-    const response = await fetch(API_BASE_URL);
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(baseUrl, {
+      credentials: "include",
+    });
     const items = await readResponse(response);
     return Array.isArray(items) ? items.map(mapServerItemToLocalItem) : [];
   } catch (err) {
@@ -54,8 +69,10 @@ export const getItemsFromServer = async () => {
 
 export const addItemToServer = async (task, date) => {
   try {
-    const response = await fetch(API_BASE_URL, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(baseUrl, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -78,8 +95,10 @@ export const addItemToServer = async (task, date) => {
 
 export const markItemCompletedOnServer = async (id, completed) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}/completed`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/${id}/completed`, {
       method: "PUT",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -100,8 +119,10 @@ export const markItemCompletedOnServer = async (id, completed) => {
 
 export const updateTodoItemOnServer = async (id, task, date) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/${id}`, {
       method: "PATCH",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -124,8 +145,10 @@ export const updateTodoItemOnServer = async (id, task, date) => {
 
 export const deleteItemFromServer = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/${id}`, {
       method: "DELETE",
+      credentials: "include",
     });
     await readResponse(response);
     return id;
@@ -141,8 +164,10 @@ export const deleteItemFromServer = async (id) => {
 
 export const clearCompletedOnServer = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/completed`, {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/completed`, {
       method: "DELETE",
+      credentials: "include",
     });
     await readResponse(response);
   } catch (err) {

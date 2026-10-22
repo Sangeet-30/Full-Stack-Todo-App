@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const todoItemSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+      default: null,
+    },
     task: {
       type: String,
       required: [true, "Task description is required"],

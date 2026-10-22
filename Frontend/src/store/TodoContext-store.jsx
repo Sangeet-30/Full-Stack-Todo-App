@@ -8,6 +8,7 @@ import {
   updateTodoItemOnServer,
 } from "../services/itemsService";
 import { TodoContext } from "./TodoContext";
+import { useAuth } from "./AuthContext";
 
 const todoItemsReducer = (currTodoItems, action) => {
   switch (action.type) {
@@ -47,8 +48,9 @@ const todoItemsReducer = (currTodoItems, action) => {
 };
 
 const TodoContextProvider = ({ children }) => {
+  const { user, logout } = useAuth();
   const [todoItems, dispatchTodoItems] = useReducer(todoItemsReducer, []);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -64,10 +66,30 @@ const TodoContextProvider = ({ children }) => {
     setError(null);
   }, []);
 
+  const handleAuthExpiry = useCallback(
+    (err) => {
+      if (err.status === 401) {
+        logout();
+        setError("Your session has expired. Please sign in again.");
+      } else {
+        setError(err.message || "Operation failed.");
+      }
+    },
+    [logout],
+  );
+
   useEffect(() => {
     let ignore = false;
 
+    if (!user) {
+      return () => {
+        ignore = true;
+      };
+    }
+
     const fetchInitialData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         const items = await getItemsFromServer();
         if (!ignore) {
@@ -79,7 +101,7 @@ const TodoContextProvider = ({ children }) => {
       } catch (err) {
         if (!ignore) {
           console.error("Failed to load todo items:", err);
-          setError(err.message || "Failed to load tasks from server.");
+          handleAuthExpiry(err);
         }
       } finally {
         if (!ignore) {
@@ -93,9 +115,10 @@ const TodoContextProvider = ({ children }) => {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [user, handleAuthExpiry]);
 
   const refreshItems = useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -106,11 +129,11 @@ const TodoContextProvider = ({ children }) => {
       });
     } catch (err) {
       console.error("Failed to refresh todo items:", err);
-      setError(err.message || "Failed to load tasks from server.");
+      handleAuthExpiry(err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, handleAuthExpiry]);
 
   const addNewItem = async (itemName, itemDate) => {
     setIsMutating(true);
@@ -125,7 +148,7 @@ const TodoContextProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error("Failed to add todo item:", err);
-      setError(err.message || "Failed to create task.");
+      handleAuthExpiry(err);
       return false;
     } finally {
       setIsMutating(false);
@@ -145,7 +168,7 @@ const TodoContextProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error("Failed to delete todo item:", err);
-      setError(err.message || "Failed to delete task.");
+      handleAuthExpiry(err);
       return false;
     } finally {
       setIsMutating(false);
@@ -175,7 +198,7 @@ const TodoContextProvider = ({ children }) => {
         type: "TOGGLE_ITEM",
         payload: { itemId },
       });
-      setError(err.message || "Failed to update task completion.");
+      handleAuthExpiry(err);
       return false;
     }
   };
@@ -197,7 +220,7 @@ const TodoContextProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error("Failed to edit todo item:", err);
-      setError(err.message || "Failed to save task edits.");
+      handleAuthExpiry(err);
       return false;
     } finally {
       setIsMutating(false);
@@ -216,7 +239,7 @@ const TodoContextProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error("Failed to clear completed todo items:", err);
-      setError(err.message || "Failed to clear completed tasks.");
+      handleAuthExpiry(err);
       return false;
     } finally {
       setIsMutating(false);

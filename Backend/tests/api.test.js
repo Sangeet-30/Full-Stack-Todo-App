@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
 const todoItemController = require("../controllers/todoItemController");
 const errorsController = require("../controllers/errors");
+const requireAuth = require("../middleware/requireAuth");
 const TodoItem = require("../models/todoItem");
 
 const createMockRes = () => {
@@ -42,10 +43,11 @@ const todayStr = getOffsetDateString(0);
 const tomorrowStr = getOffsetDateString(1);
 const yesterdayStr = getOffsetDateString(-1);
 const futureStr = getOffsetDateString(7);
+const mockUserId = new mongoose.Types.ObjectId().toString();
 
 // Task Input Validation Tests
 test("Validation: createTodoItem rejects empty task", async () => {
-  const req = { body: { task: "   ", date: todayStr } };
+  const req = { session: { userId: mockUserId }, body: { task: "   ", date: todayStr } };
   const res = createMockRes();
   const next = () => {};
 
@@ -55,7 +57,7 @@ test("Validation: createTodoItem rejects empty task", async () => {
 });
 
 test("Validation: createTodoItem rejects non-string task", async () => {
-  const req = { body: { task: 12345, date: todayStr } };
+  const req = { session: { userId: mockUserId }, body: { task: 12345, date: todayStr } };
   const res = createMockRes();
   const next = () => {};
 
@@ -65,7 +67,7 @@ test("Validation: createTodoItem rejects non-string task", async () => {
 });
 
 test("Validation: createTodoItem rejects task exceeding 300 characters", async () => {
-  const req = { body: { task: "a".repeat(301), date: todayStr } };
+  const req = { session: { userId: mockUserId }, body: { task: "a".repeat(301), date: todayStr } };
   const res = createMockRes();
   const next = () => {};
 
@@ -76,7 +78,7 @@ test("Validation: createTodoItem rejects task exceeding 300 characters", async (
 
 // Date Input Validation Tests
 test("Validation: createTodoItem rejects missing date", async () => {
-  const req = { body: { task: "Valid task" } };
+  const req = { session: { userId: mockUserId }, body: { task: "Valid task" } };
   const res = createMockRes();
   const next = () => {};
 
@@ -86,7 +88,7 @@ test("Validation: createTodoItem rejects missing date", async () => {
 });
 
 test("Validation: createTodoItem rejects empty date string", async () => {
-  const req = { body: { task: "Valid task", date: "   " } };
+  const req = { session: { userId: mockUserId }, body: { task: "Valid task", date: "   " } };
   const res = createMockRes();
   const next = () => {};
 
@@ -96,7 +98,7 @@ test("Validation: createTodoItem rejects empty date string", async () => {
 });
 
 test("Validation: createTodoItem rejects invalid date format", async () => {
-  const req = { body: { task: "Valid task", date: "not-a-valid-date" } };
+  const req = { session: { userId: mockUserId }, body: { task: "Valid task", date: "not-a-valid-date" } };
   const res = createMockRes();
   const next = () => {};
 
@@ -106,7 +108,7 @@ test("Validation: createTodoItem rejects invalid date format", async () => {
 });
 
 test("Validation: createTodoItem rejects impossible calendar date", async () => {
-  const req = { body: { task: "Valid task", date: "2026-02-30" } };
+  const req = { session: { userId: mockUserId }, body: { task: "Valid task", date: "2026-02-30" } };
   const res = createMockRes();
   const next = () => {};
 
@@ -116,7 +118,7 @@ test("Validation: createTodoItem rejects impossible calendar date", async () => 
 });
 
 test("Validation: createTodoItem rejects yesterday's past date", async () => {
-  const req = { body: { task: "Valid task", date: yesterdayStr } };
+  const req = { session: { userId: mockUserId }, body: { task: "Valid task", date: yesterdayStr } };
   const res = createMockRes();
   const next = () => {};
 
@@ -132,14 +134,14 @@ test("Validation: createTodoItem accepts today's date and preserves calendar dat
   };
 
   try {
-    const req = { body: { task: "Task due today", date: todayStr } };
+    const req = { session: { userId: mockUserId }, body: { task: "Task due today", date: todayStr } };
     const res = createMockRes();
     const next = () => {};
 
     await todoItemController.createTodoItem(req, res, next);
     assert.equal(res.statusCode, 201);
     assert.equal(res.body.task, "Task due today");
-    // Verify UTC midnight preserves the exact calendar date
+    assert.equal(res.body.user.toString(), mockUserId);
     assert.equal(res.body.date.toISOString().slice(0, 10), todayStr);
   } finally {
     TodoItem.prototype.save = originalSave;
@@ -154,6 +156,7 @@ test("Validation: createTodoItem accepts ISO timestamp for today", async () => {
 
   try {
     const req = {
+      session: { userId: mockUserId },
       body: { task: "Task with ISO date", date: `${todayStr}T00:00:00.000Z` },
     };
     const res = createMockRes();
@@ -174,7 +177,7 @@ test("Validation: createTodoItem accepts tomorrow's date", async () => {
   };
 
   try {
-    const req = { body: { task: "Task due tomorrow", date: tomorrowStr } };
+    const req = { session: { userId: mockUserId }, body: { task: "Task due tomorrow", date: tomorrowStr } };
     const res = createMockRes();
     const next = () => {};
 
@@ -193,7 +196,7 @@ test("Validation: createTodoItem accepts a future date", async () => {
   };
 
   try {
-    const req = { body: { task: "Task due next week", date: futureStr } };
+    const req = { session: { userId: mockUserId }, body: { task: "Task due next week", date: futureStr } };
     const res = createMockRes();
     const next = () => {};
 
@@ -209,7 +212,7 @@ test("Validation: createTodoItem accepts a future date", async () => {
 // Update Date Validation Tests
 test("Validation: updateTodoItem rejects missing date", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
-  const req = { params: { id: validId }, body: { task: "Updated task" } };
+  const req = { session: { userId: mockUserId }, params: { id: validId }, body: { task: "Updated task" } };
   const res = createMockRes();
   const next = () => {};
 
@@ -221,6 +224,7 @@ test("Validation: updateTodoItem rejects missing date", async () => {
 test("Validation: updateTodoItem rejects invalid date format", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
   const req = {
+    session: { userId: mockUserId },
     params: { id: validId },
     body: { task: "Updated task", date: "invalid-date" },
   };
@@ -235,6 +239,7 @@ test("Validation: updateTodoItem rejects invalid date format", async () => {
 test("Validation: updateTodoItem rejects editing to a past date", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
   const req = {
+    session: { userId: mockUserId },
     params: { id: validId },
     body: { task: "Updated task", date: yesterdayStr },
   };
@@ -250,6 +255,7 @@ test("Validation: updateTodoItem accepts today or future date", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
   const mockTodo = {
     _id: validId,
+    user: mockUserId,
     task: "Old task",
     date: null,
     completed: false,
@@ -258,11 +264,12 @@ test("Validation: updateTodoItem accepts today or future date", async () => {
     },
   };
 
-  const originalFindById = TodoItem.findById;
-  TodoItem.findById = async () => mockTodo;
+  const originalFindOne = TodoItem.findOne;
+  TodoItem.findOne = async () => mockTodo;
 
   try {
     const req = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { task: "New task updated", date: futureStr },
     };
@@ -273,7 +280,7 @@ test("Validation: updateTodoItem accepts today or future date", async () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.task, "New task updated");
   } finally {
-    TodoItem.findById = originalFindById;
+    TodoItem.findOne = originalFindOne;
   }
 });
 
@@ -281,6 +288,7 @@ test("Validation: updateTodoItem rejects editing a completed task", async () => 
   const validId = new mongoose.Types.ObjectId().toString();
   const mockCompletedTodo = {
     _id: validId,
+    user: mockUserId,
     task: "Completed task",
     date: todayStr,
     completed: true,
@@ -289,11 +297,12 @@ test("Validation: updateTodoItem rejects editing a completed task", async () => 
     },
   };
 
-  const originalFindById = TodoItem.findById;
-  TodoItem.findById = async () => mockCompletedTodo;
+  const originalFindOne = TodoItem.findOne;
+  TodoItem.findOne = async () => mockCompletedTodo;
 
   try {
     const req = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { task: "Attempted edit", date: futureStr },
     };
@@ -307,7 +316,7 @@ test("Validation: updateTodoItem rejects editing a completed task", async () => 
       "Completed tasks cannot be edited. Mark the task as incomplete to edit.",
     );
   } finally {
-    TodoItem.findById = originalFindById;
+    TodoItem.findOne = originalFindOne;
   }
 });
 
@@ -315,6 +324,7 @@ test("Validation: marking completed task incomplete enables editing again", asyn
   const validId = new mongoose.Types.ObjectId().toString();
   const mockTodo = {
     _id: validId,
+    user: mockUserId,
     task: "Task to toggle",
     date: todayStr,
     completed: true,
@@ -323,12 +333,13 @@ test("Validation: marking completed task incomplete enables editing again", asyn
     },
   };
 
-  const originalFindById = TodoItem.findById;
-  TodoItem.findById = async () => mockTodo;
+  const originalFindOne = TodoItem.findOne;
+  TodoItem.findOne = async () => mockTodo;
 
   try {
-    // 1. First verify editing is rejected while completed
+    // 1. Verify editing rejected while completed
     const reqEdit1 = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { task: "Attempt while completed", date: futureStr },
     };
@@ -336,8 +347,9 @@ test("Validation: marking completed task incomplete enables editing again", asyn
     await todoItemController.updateTodoItem(reqEdit1, resEdit1, () => {});
     assert.equal(resEdit1.statusCode, 400);
 
-    // 2. Mark the task incomplete
+    // 2. Mark task incomplete
     const reqToggle = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { completed: false },
     };
@@ -345,10 +357,11 @@ test("Validation: marking completed task incomplete enables editing again", asyn
     await todoItemController.markCompleted(reqToggle, resToggle, () => {});
     assert.equal(resToggle.statusCode, 200);
     assert.equal(resToggle.body.completed, false);
-    mockTodo.completed = false; // State after toggle
+    mockTodo.completed = false;
 
-    // 3. Now editing should be allowed
+    // 3. Editing is now allowed
     const reqEdit2 = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { task: "Edit after marked incomplete", date: futureStr },
     };
@@ -357,13 +370,13 @@ test("Validation: marking completed task incomplete enables editing again", asyn
     assert.equal(resEdit2.statusCode, 200);
     assert.equal(resEdit2.body.task, "Edit after marked incomplete");
   } finally {
-    TodoItem.findById = originalFindById;
+    TodoItem.findOne = originalFindOne;
   }
 });
 
 // ID Validation Tests
 test("Validation: updateTodoItem rejects invalid ObjectId", async () => {
-  const req = { params: { id: "invalid-id" }, body: { task: "Valid task", date: todayStr } };
+  const req = { session: { userId: mockUserId }, params: { id: "invalid-id" }, body: { task: "Valid task", date: todayStr } };
   const res = createMockRes();
   const next = () => {};
 
@@ -373,7 +386,7 @@ test("Validation: updateTodoItem rejects invalid ObjectId", async () => {
 });
 
 test("Validation: deleteTodoItem rejects invalid ObjectId", async () => {
-  const req = { params: { id: "not-an-objectid" } };
+  const req = { session: { userId: mockUserId }, params: { id: "not-an-objectid" } };
   const res = createMockRes();
   const next = () => {};
 
@@ -383,7 +396,7 @@ test("Validation: deleteTodoItem rejects invalid ObjectId", async () => {
 });
 
 test("Validation: markCompleted rejects invalid ObjectId", async () => {
-  const req = { params: { id: "bad-id" }, body: { completed: true } };
+  const req = { session: { userId: mockUserId }, params: { id: "bad-id" }, body: { completed: true } };
   const res = createMockRes();
   const next = () => {};
 
@@ -402,39 +415,108 @@ test("Errors Controller: get404 responds with 404 JSON", () => {
   assert.match(res.body.message, /Resource not found/);
 });
 
-// Mocked Model CRUD Tests
-test("CRUD: getTodoItems returns list of items", async () => {
-  const mockItems = [
-    { _id: new mongoose.Types.ObjectId(), task: "Task 1", completed: false },
-    { _id: new mongoose.Types.ObjectId(), task: "Task 2", completed: true },
-  ];
+// Authorization & Model CRUD Tests
+test("Authorization: requireAuth rejects unauthenticated requests with 401", () => {
+  const req = { session: {} };
+  const res = createMockRes();
+  let calledNext = false;
 
-  const originalFind = TodoItem.find;
-  TodoItem.find = () => ({
-    sort: async () => mockItems,
+  requireAuth(req, res, () => {
+    calledNext = true;
   });
 
-  try {
-    const req = {};
-    const res = createMockRes();
-    const next = () => {};
+  assert.equal(calledNext, false);
+  assert.equal(res.statusCode, 401);
+  assert.match(res.body.message, /Authentication required/);
+});
 
-    await todoItemController.getTodoItems(req, res, next);
+test("Authorization: requireAuth allows authenticated requests through", () => {
+  const req = { session: { userId: mockUserId } };
+  const res = createMockRes();
+  let calledNext = false;
+
+  requireAuth(req, res, () => {
+    calledNext = true;
+  });
+
+  assert.equal(calledNext, true);
+});
+
+test("Authorization: getTodoItems filters strictly by authenticated user ID", async () => {
+  const mockItems = [
+    { _id: new mongoose.Types.ObjectId(), user: mockUserId, task: "User's task", completed: false },
+  ];
+
+  let queryFilter = null;
+  const originalFind = TodoItem.find;
+  TodoItem.find = (filter) => {
+    queryFilter = filter;
+    return {
+      sort: async () => mockItems,
+    };
+  };
+
+  try {
+    const req = { session: { userId: mockUserId } };
+    const res = createMockRes();
+    await todoItemController.getTodoItems(req, res, () => {});
+
     assert.equal(res.statusCode, 200);
-    assert.equal(res.body.length, 2);
-    assert.equal(res.body[0].task, "Task 1");
+    assert.deepEqual(queryFilter, { user: mockUserId });
+    assert.equal(res.body.length, 1);
   } finally {
     TodoItem.find = originalFind;
   }
 });
 
-test("CRUD: deleteTodoItem returns 404 when item does not exist", async () => {
-  const validId = new mongoose.Types.ObjectId().toString();
-  const originalFindByIdAndDelete = TodoItem.findByIdAndDelete;
-  TodoItem.findByIdAndDelete = async () => null;
+test("Authorization: User A cannot read, update, or delete User B's todo", async () => {
+  const userAId = new mongoose.Types.ObjectId().toString();
+  const todoIdOfUserB = new mongoose.Types.ObjectId().toString();
+
+  const originalFindOne = TodoItem.findOne;
+  const originalFindOneAndDelete = TodoItem.findOneAndDelete;
+
+  // Simulate database lookup where todo belongs to User B, not User A
+  TodoItem.findOne = async (query) => {
+    if (query.user === userAId) return null;
+    return { _id: todoIdOfUserB, user: "user-B-id", task: "Secret task" };
+  };
+  TodoItem.findOneAndDelete = async (query) => {
+    if (query.user === userAId) return null;
+    return { _id: todoIdOfUserB };
+  };
 
   try {
-    const req = { params: { id: validId } };
+    const req = {
+      session: { userId: userAId },
+      params: { id: todoIdOfUserB },
+      body: { task: "Hacked title", date: futureStr },
+    };
+
+    // Attempt update
+    const resUpdate = createMockRes();
+    await todoItemController.updateTodoItem(req, resUpdate, () => {});
+    assert.equal(resUpdate.statusCode, 404);
+    assert.equal(resUpdate.body.message, "Todo item not found.");
+
+    // Attempt delete
+    const resDelete = createMockRes();
+    await todoItemController.deleteTodoItem(req, resDelete, () => {});
+    assert.equal(resDelete.statusCode, 404);
+    assert.equal(resDelete.body.message, "Todo item not found.");
+  } finally {
+    TodoItem.findOne = originalFindOne;
+    TodoItem.findOneAndDelete = originalFindOneAndDelete;
+  }
+});
+
+test("CRUD: deleteTodoItem returns 404 when item does not exist", async () => {
+  const validId = new mongoose.Types.ObjectId().toString();
+  const originalFindOneAndDelete = TodoItem.findOneAndDelete;
+  TodoItem.findOneAndDelete = async () => null;
+
+  try {
+    const req = { session: { userId: mockUserId }, params: { id: validId } };
     const res = createMockRes();
     const next = () => {};
 
@@ -442,34 +524,35 @@ test("CRUD: deleteTodoItem returns 404 when item does not exist", async () => {
     assert.equal(res.statusCode, 404);
     assert.equal(res.body.message, "Todo item not found.");
   } finally {
-    TodoItem.findByIdAndDelete = originalFindByIdAndDelete;
+    TodoItem.findOneAndDelete = originalFindOneAndDelete;
   }
 });
 
 test("CRUD: deleteTodoItem returns 204 when item is successfully deleted", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
-  const originalFindByIdAndDelete = TodoItem.findByIdAndDelete;
-  TodoItem.findByIdAndDelete = async () => ({ _id: validId, task: "Deleted item" });
+  const originalFindOneAndDelete = TodoItem.findOneAndDelete;
+  TodoItem.findOneAndDelete = async () => ({ _id: validId, task: "Deleted item" });
 
   try {
-    const req = { params: { id: validId } };
+    const req = { session: { userId: mockUserId }, params: { id: validId } };
     const res = createMockRes();
     const next = () => {};
 
     await todoItemController.deleteTodoItem(req, res, next);
     assert.equal(res.statusCode, 204);
   } finally {
-    TodoItem.findByIdAndDelete = originalFindByIdAndDelete;
+    TodoItem.findOneAndDelete = originalFindOneAndDelete;
   }
 });
 
 test("CRUD: updateTodoItem returns 404 when item does not exist", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
-  const originalFindById = TodoItem.findById;
-  TodoItem.findById = async () => null;
+  const originalFindOne = TodoItem.findOne;
+  TodoItem.findOne = async () => null;
 
   try {
     const req = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { task: "Updated task", date: futureStr },
     };
@@ -480,7 +563,7 @@ test("CRUD: updateTodoItem returns 404 when item does not exist", async () => {
     assert.equal(res.statusCode, 404);
     assert.equal(res.body.message, "Todo item not found.");
   } finally {
-    TodoItem.findById = originalFindById;
+    TodoItem.findOne = originalFindOne;
   }
 });
 
@@ -488,6 +571,7 @@ test("CRUD: markCompleted updates completed boolean", async () => {
   const validId = new mongoose.Types.ObjectId().toString();
   const mockTodo = {
     _id: validId,
+    user: mockUserId,
     task: "Complete me",
     completed: false,
     save: async function () {
@@ -495,11 +579,12 @@ test("CRUD: markCompleted updates completed boolean", async () => {
     },
   };
 
-  const originalFindById = TodoItem.findById;
-  TodoItem.findById = async () => mockTodo;
+  const originalFindOne = TodoItem.findOne;
+  TodoItem.findOne = async () => mockTodo;
 
   try {
     const req = {
+      session: { userId: mockUserId },
       params: { id: validId },
       body: { completed: true },
     };
@@ -510,22 +595,27 @@ test("CRUD: markCompleted updates completed boolean", async () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.completed, true);
   } finally {
-    TodoItem.findById = originalFindById;
+    TodoItem.findOne = originalFindOne;
   }
 });
 
-test("CRUD: deleteCompletedTodoItems removes completed tasks", async () => {
+test("CRUD: deleteCompletedTodoItems removes only current user's completed tasks", async () => {
+  let deleteFilter = null;
   const originalDeleteMany = TodoItem.deleteMany;
-  TodoItem.deleteMany = async () => ({ deletedCount: 3 });
+  TodoItem.deleteMany = async (filter) => {
+    deleteFilter = filter;
+    return { deletedCount: 3 };
+  };
 
   try {
-    const req = {};
+    const req = { session: { userId: mockUserId } };
     const res = createMockRes();
     const next = () => {};
 
     await todoItemController.deleteCompletedTodoItems(req, res, next);
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.deletedCount, 3);
+    assert.deepEqual(deleteFilter, { user: mockUserId, completed: true });
   } finally {
     TodoItem.deleteMany = originalDeleteMany;
   }

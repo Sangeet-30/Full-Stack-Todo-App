@@ -49,37 +49,22 @@ const validateDateInput = (date) => {
 
   if (typeof date === "string") {
     const trimmed = date.trim();
-    const ymdRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (ymdRegex.test(trimmed)) {
-      const [year, month, day] = trimmed.split("-").map(Number);
-      parsedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-      if (
-        parsedDate.getUTCFullYear() !== year ||
-        parsedDate.getUTCMonth() !== month - 1 ||
-        parsedDate.getUTCDate() !== day
-      ) {
-        return { valid: false, error: "Invalid date format provided." };
-      }
-      dateStr = trimmed;
-    } else {
-      const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (isoMatch) {
-        const year = Number(isoMatch[1]);
-        const month = Number(isoMatch[2]);
-        const day = Number(isoMatch[3]);
-        parsedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-        if (
-          parsedDate.getUTCFullYear() !== year ||
-          parsedDate.getUTCMonth() !== month - 1 ||
-          parsedDate.getUTCDate() !== day
-        ) {
-          return { valid: false, error: "Invalid date format provided." };
-        }
-        dateStr = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-      } else {
-        return { valid: false, error: "Invalid date format provided." };
-      }
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!isoMatch) {
+      return { valid: false, error: "Invalid date format provided." };
     }
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    parsedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    if (
+      parsedDate.getUTCFullYear() !== year ||
+      parsedDate.getUTCMonth() !== month - 1 ||
+      parsedDate.getUTCDate() !== day
+    ) {
+      return { valid: false, error: "Invalid date format provided." };
+    }
+    dateStr = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   } else if (date instanceof Date) {
     if (isNaN(date.getTime())) {
       return { valid: false, error: "Invalid date format provided." };
@@ -122,6 +107,7 @@ exports.createTodoItem = async (req, res, next) => {
     }
 
     const todoItem = new TodoItem({
+      user: req.session ? req.session.userId : null,
       task: task.trim(),
       date: dateResult.value,
       completed: false,
@@ -136,7 +122,8 @@ exports.createTodoItem = async (req, res, next) => {
 
 exports.getTodoItems = async (req, res, next) => {
   try {
-    const todoItems = await TodoItem.find().sort({ createdAt: -1 });
+    const userId = req.session ? req.session.userId : null;
+    const todoItems = await TodoItem.find({ user: userId }).sort({ createdAt: -1 });
     return res.status(200).json(todoItems);
   } catch (error) {
     return next(error);
@@ -146,12 +133,13 @@ exports.getTodoItems = async (req, res, next) => {
 exports.deleteTodoItem = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.session ? req.session.userId : null;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid todo ID format." });
     }
 
-    const deletedItem = await TodoItem.findByIdAndDelete(id);
+    const deletedItem = await TodoItem.findOneAndDelete({ _id: id, user: userId });
     if (!deletedItem) {
       return res.status(404).json({ message: "Todo item not found." });
     }
@@ -166,6 +154,7 @@ exports.updateTodoItem = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { task, date } = req.body;
+    const userId = req.session ? req.session.userId : null;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid todo ID format." });
@@ -181,7 +170,7 @@ exports.updateTodoItem = async (req, res, next) => {
       return res.status(400).json({ message: dateResult.error });
     }
 
-    const todoItem = await TodoItem.findById(id);
+    const todoItem = await TodoItem.findOne({ _id: id, user: userId });
     if (!todoItem) {
       return res.status(404).json({ message: "Todo item not found." });
     }
@@ -204,7 +193,8 @@ exports.updateTodoItem = async (req, res, next) => {
 
 exports.deleteCompletedTodoItems = async (req, res, next) => {
   try {
-    const result = await TodoItem.deleteMany({ completed: true });
+    const userId = req.session ? req.session.userId : null;
+    const result = await TodoItem.deleteMany({ user: userId, completed: true });
     return res.status(200).json({
       message: "Completed todos removed successfully.",
       deletedCount: result.deletedCount,
@@ -217,12 +207,13 @@ exports.deleteCompletedTodoItems = async (req, res, next) => {
 exports.markCompleted = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.session ? req.session.userId : null;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid todo ID format." });
     }
 
-    const todoItem = await TodoItem.findById(id);
+    const todoItem = await TodoItem.findOne({ _id: id, user: userId });
     if (!todoItem) {
       return res.status(404).json({ message: "Todo item not found." });
     }
@@ -230,11 +221,7 @@ exports.markCompleted = async (req, res, next) => {
     const isCompleted =
       typeof req.body.completed === "boolean"
         ? req.body.completed
-        : req.body.completed === "true"
-          ? true
-          : req.body.completed === "false"
-            ? false
-            : true;
+        : req.body.completed !== "false";
 
     todoItem.completed = isCompleted;
     await todoItem.save();

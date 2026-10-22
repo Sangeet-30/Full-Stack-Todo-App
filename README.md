@@ -1,395 +1,260 @@
-# Full-Stack Todo Application (TodoFlow)
+# TodoFlow — Full-Stack Todo App
 
-A production-ready full-stack Todo application built with **React 19**, **Vite**, **Tailwind CSS**, **Node.js**, **Express 5**, and **MongoDB with Mongoose**.
+A full-stack Todo application built with **React 19, Tailwind CSS, Node.js, Express, and MongoDB**. TodoFlow helps users organize daily tasks with secure authentication, task management, search, filters, and progress tracking.
 
----
+## Features
 
-## Table of Contents
+- **Authentication:** User registration, login, logout, and persistent sessions.
+- **Secure Access:** Password hashing and user-specific todo data isolation.
+- **Task Management:** Create, view, edit, complete, and delete tasks.
+- **Due Dates:** Required due dates, past-date prevention, and timezone-safe date handling.
+- **Search & Filters:** Search tasks and filter by All, Active, and Completed.
+- **Progress Tracking:** Completion statistics and progress indicators.
+- **Responsive UI:** Clean interface for desktop, tablet, and mobile.
+- **Session Management:** MongoDB-backed sessions and protected API endpoints.
 
-- [Overview](#overview)
-- [Implemented Features](#implemented-features)
-- [Future Enhancements](#future-enhancements)
-- [Architecture & Tech Stack](#architecture--tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Environment Setup](#environment-setup)
-- [Installation and Running](#installation-and-running)
-- [REST API Reference](#rest-api-reference)
-- [Testing & Quality Verification](#testing--quality-verification)
-- [Security & Production Best Practices](#security--production-best-practices)
+## Tech Stack
 
----
-
-## Overview
-
-TodoFlow is designed to help users organize, track, and complete daily tasks efficiently. The application follows clean architecture principles, separating the reactive client-side user interface from the RESTful backend API while preserving original course concepts and database conventions (`todo_app` database name, `/api/todo` endpoint routes).
-
----
-
-## Implemented Features
-
-### Frontend (React 19 + Vite + Tailwind CSS)
-- **Responsive Layout**: Designed for mobile devices, tablets, and desktop displays with responsive typography, touch targets, and spacing.
-- **Task Management (CRUD)**:
-  - Create tasks with mandatory description and due date (preventing past dates).
-  - View all tasks with date indicators and status badges.
-  - Inline editing for active tasks with input autofocus and keyboard shortcuts (`Enter` to save, `Escape` to cancel); completed tasks cannot be edited.
-  - Quick toggle completion with optimistic UI updates and strike-through styling.
-  - Safe task deletion protected by a confirmation modal.
-- **Search & Filtering**:
-  - Live client-side keyword search across task descriptions.
-  - Filter tabs: **All Tasks**, **Active**, and **Completed** with real-time counters.
-  - Bulk action to **Clear Completed** tasks with confirmation dialog.
-- **Visual Progress & Metrics**:
-  - Metric summary cards displaying total, active, and completed task tallies.
-  - Dynamic completion rate progress bar with animated transition.
-  - Contextual due date badges (overdue, due today, due tomorrow, upcoming).
-- **Feedback & State Handling**:
-  - Skeleton loading states while retrieving tasks from the backend.
-  - Clear empty states tailored to each filter and search query.
-  - Inline error alerts with a **Retry** action button for network failures.
-  - Auto-dismissing success notifications for task actions.
-  - Client-side form validation preventing blank submissions or oversized text.
-  - Accessible ARIA labels and roles for keyboard navigation and screen readers.
-
-### Backend (Node.js + Express 5 + Mongoose 9)
-- **RESTful Endpoints**: Full CRUD support on `/api/todo` following standard HTTP methods and status codes.
-- **Input Validation & Sanitization**:
-  - Validates required task text, trims whitespace, and limits length (max 300 characters).
-  - Enforces mandatory due dates on create and update, rejects missing/empty/past calendar dates, and prevents updating completed tasks.
-  - Verifies 24-character hexadecimal MongoDB ObjectIds before database queries.
-- **Robust Error Handling**:
-  - Explicit HTTP status codes (`200`, `201`, `204`, `400`, `404`, `500`).
-  - Centralized global error middleware for catching asynchronous errors.
-  - Standardized JSON 404 handler for unrecognized routes.
-- **Health & Diagnostics**:
-  - `GET /api/health` reports service and database connectivity state.
-- **Environment & Security**:
-  - Configurable CORS origins via `CORS_ORIGIN` environment variable.
-  - Database URI injected via `MONGO_URL` with fallback to `mongodb://127.0.0.1:27017/todo_app`.
-  - Zero hardcoded credentials; strict `.gitignore` rules protect real secrets.
-  - Graceful shutdown handlers for `SIGINT` and `SIGTERM`.
-
----
-
-## Future Enhancements
-
-The following capabilities are reserved for future releases:
-- User authentication and authorization (JWT / session-based multi-tenant support).
-- Task categories, tags, and priorities (High, Medium, Low).
-- Drag-and-drop task reordering.
-- Dark mode theme toggle.
-- Push notifications / reminder emails for impending due dates.
-
----
-
-## Architecture & Tech Stack
-
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 19, Vite 8, Tailwind CSS 4, React Icons (`react-icons/fi`) |
-| **Backend** | Node.js (v20+ / v24), Express 5, Mongoose 9, dotenv, cors |
-| **Database** | MongoDB (Local daemon or MongoDB Atlas) |
-| **Testing** | Node.js native test runner (`node:test`, `node:assert/strict`) |
-
----
+| Frontend | Backend | Database & Security |
+|---|---|---|
+| React 19 | Node.js | MongoDB Atlas |
+| Vite | Express 5 | Mongoose |
+| Tailwind CSS 4 | REST API | bcryptjs |
+| React Icons | Express Session | Connect Mongo |
 
 ## Project Structure
 
-```
+```text
 Full-Stack-Todo-App/
 ├── Backend/
 │   ├── controllers/
-│   │   ├── errors.js               # 404 handler
-│   │   └── todoItemController.js   # CRUD operations and request validators
+│   ├── middleware/
 │   ├── models/
-│   │   └── todoItem.js             # Mongoose TodoItem schema
 │   ├── routes/
-│   │   ├── todoItemRouter.js       # Express route definitions
-│   │   └── totoItemRouter.js       # Backwards-compatibility alias
 │   ├── tests/
-│   │   └── api.test.js             # Unit and controller integration tests
-│   ├── .env.example                # Example backend environment variables
-│   ├── app.js                      # Express app setup, middleware, and server bootstrap
-│   └── package.json                # Backend scripts and dependencies
+│   ├── .env.example
+│   ├── app.js
+│   └── package.json
 ├── Frontend/
 │   ├── src/
-│   │   ├── assets/                 # Static visual assets
 │   │   ├── components/
-│   │   │   ├── AddTodo.jsx         # Task creation form with validation
-│   │   │   ├── AlertBanner.jsx     # Optional / utility alerts
-│   │   │   ├── AppName.jsx         # Header branding component
-│   │   │   ├── ConfirmModal.jsx    # Accessible modal for destructive operations
-│   │   │   ├── Footer.jsx          # Footer attribution
-│   │   │   ├── NotificationBanner.jsx # Error and success notification displays
-│   │   │   ├── TodoItem.jsx        # Individual task item card (view & edit)
-│   │   │   └── TodoItems.jsx       # Task list, metrics, filter bar & search
 │   │   ├── services/
-│   │   │   └── itemsService.js     # Configurable API client functions
 │   │   ├── store/
-│   │   │   ├── TodoContext.js      # React Context definition
-│   │   │   └── TodoContext-store.jsx # State management provider & reducer
-│   │   ├── App.css                 # Global styling & Tailwind CSS directives
-│   │   ├── App.jsx                 # Top-level app layout
-│   │   └── main.jsx                # Application root mount
-│   ├── .env.example                # Example frontend environment variables
-│   ├── eslint.config.js            # ESLint rules
-│   ├── index.html                  # HTML template
-│   ├── package.json                # Frontend scripts and dependencies
-│   └── vite.config.js              # Vite configuration with Tailwind CSS plugin
-├── .gitignore                      # Git exclusion rules
-└── README.md                       # Project documentation
+│   │   └── utils/
+│   ├── tests/
+│   ├── .env.example
+│   └── package.json
+├── .gitignore
+└── README.md
 ```
 
----
+## Run Locally
 
-## Prerequisites
+### Prerequisites
 
-- **Node.js**: v20.x or higher (v24.x recommended)
-- **npm**: v10.x or higher
-- **MongoDB**: A running local MongoDB instance or a cloud MongoDB Atlas connection string
+- Node.js 20 or later
+- npm
+- MongoDB local instance or MongoDB Atlas
 
----
+### 1. Clone the repository
 
-## Environment Setup
-
-### 1. Backend Configuration
-Copy the example environment file:
 ```bash
-cp Backend/.env.example Backend/.env
+git clone https://github.com/Sangeet-30/Full-Stack-Todo-App.git
+cd Full-Stack-Todo-App
 ```
 
-Edit `Backend/.env` with your settings:
+### 2. Configure the backend
+
+```bash
+cd Backend
+npm install
+cp .env.example .env
+```
+
+Configure `Backend/.env`:
+
 ```env
-# Server Port
 PORT=3000
-
-# Node Environment
-NODE_ENV=development
-
-# MongoDB Connection String (database: todo_app)
 MONGO_URL=mongodb://127.0.0.1:27017/todo_app
-
-# Allowed CORS Origins (comma-separated or * for development)
+SESSION_SECRET=your_random_secret_of_at_least_32_characters
 CORS_ORIGIN=http://localhost:5173
-
-# Optional Session Secret
-SESSION_SECRET=replace_with_a_secure_session_secret
 ```
 
-### 2. Frontend Configuration
-Copy the example environment file:
+Generate a session secret on Linux with:
+
 ```bash
-cp Frontend/.env.example Frontend/.env
+openssl rand -base64 32
 ```
 
-Edit `Frontend/.env` with your backend API URL:
+Start the backend:
+
+```bash
+npm run dev
+```
+
+The backend runs at `http://localhost:3000`.
+
+### 3. Configure the frontend
+
+Open a second terminal:
+
+```bash
+cd Frontend
+npm install
+cp .env.example .env
+```
+
+Configure `Frontend/.env`:
+
 ```env
-# Todo API Base URL
 VITE_API_BASE_URL=http://localhost:3000/api/todo
+VITE_AUTH_BASE_URL=http://localhost:3000/api/auth
 ```
 
----
+Start the frontend:
 
-## Installation and Running
-
-### 1. Backend
-
-Navigate to the `Backend/` directory:
-```bash
-cd Backend
-```
-
-Install dependencies:
-```bash
-npm install
-```
-
-Start the server in development mode (with nodemon):
 ```bash
 npm run dev
 ```
 
-Or run in standard production mode:
-```bash
-npm start
+Open `http://localhost:5173` in your browser.
+
+## Deployment
+
+TodoFlow can be deployed using **MongoDB Atlas, Render, and Vercel**.
+
+### 1. MongoDB Atlas
+
+1. Create a MongoDB Atlas cluster.
+2. Create a database user with appropriate database permissions.
+3. Configure network access for your backend hosting environment.
+4. Copy your MongoDB connection URI for the backend environment.
+
+### 2. Deploy the backend on Render
+
+Create a Web Service connected to your GitHub repository.
+
+| Setting | Value |
+|---|---|
+| Root Directory | `Backend` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+
+Set these environment variables in Render:
+
+```env
+NODE_ENV=production
+MONGO_URL=your_mongodb_atlas_connection_uri
+SESSION_SECRET=your_secure_random_secret
+CORS_ORIGIN=https://your-project.vercel.app
 ```
 
-The backend starts listening at `http://localhost:3000` (or the configured `PORT`).
+Use the actual Vercel frontend origin for `CORS_ORIGIN`. Configure production session cookies to use HTTPS and the appropriate cross-site cookie settings.
 
-### 2. Frontend
+After deployment, copy the Render backend URL.
 
-Open a new terminal window and navigate to the `Frontend/` directory:
-```bash
-cd Frontend
+### 3. Deploy the frontend on Vercel
+
+Import the repository into Vercel and configure:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `Frontend` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+Set these environment variables in Vercel:
+
+```env
+VITE_API_BASE_URL=https://your-backend.onrender.com/api/todo
+VITE_AUTH_BASE_URL=https://your-backend.onrender.com/api/auth
 ```
 
-Install dependencies:
-```bash
-npm install
+Replace the example URLs with your actual Render backend URL. Redeploy the frontend after changing environment variables.
+
+### 4. Verify the deployment
+
+After both services are deployed, test:
+
+- User registration and login.
+- Session persistence after refreshing the browser.
+- Logout.
+- Creating, updating, completing, and deleting todos.
+- Isolation between different user accounts.
+- The backend health endpoint at `/api/health`.
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a user |
+| POST | `/api/auth/login` | Log in |
+| POST | `/api/auth/logout` | Log out |
+| GET | `/api/auth/me` | Get the current user |
+
+### Todos
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/todo` | Get the authenticated user's todos |
+| POST | `/api/todo` | Create a todo |
+| PATCH | `/api/todo/:id` | Update an active todo |
+| PUT | `/api/todo/:id/completed` | Toggle completion |
+| DELETE | `/api/todo/:id` | Delete a todo |
+| DELETE | `/api/todo/completed` | Clear completed todos |
+
+All todo endpoints require an authenticated session.
+
+### Health Check
+
+```text
+GET /api/health
 ```
 
-Start the Vite development server:
-```bash
-npm run dev
-```
+## Run Tests
 
-Open your browser at `http://localhost:5173` to use the application.
+Backend:
 
----
-
-## REST API Reference
-
-Base URL: `http://localhost:3000/api/todo`
-
-### Endpoints
-
-| Method | Endpoint | Description | Status Code |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Health check & DB connection state | `200 OK` |
-| `GET` | `/api/todo` | Retrieve all todo items (sorted newest first) | `200 OK` |
-| `POST` | `/api/todo` | Create a new todo item | `201 Created` |
-| `PATCH` | `/api/todo/:id` | Update task description and/or due date | `200 OK` |
-| `PUT` | `/api/todo/:id/completed` | Toggle completion status | `200 OK` |
-| `DELETE` | `/api/todo/:id` | Delete a single todo item by ID | `204 No Content` |
-| `DELETE` | `/api/todo/completed` | Delete all completed todo items | `200 OK` |
-
-### Sample Requests & Responses
-
-#### 1. Create a Task
-`POST /api/todo`
-```json
-// Request Body:
-{
-  "task": "Review pull request updates",
-  "date": "2026-10-25"
-}
-
-// Response (201 Created):
-{
-  "_id": "67160ab5f3a09e02c5e31a89",
-  "task": "Review pull request updates",
-  "date": "2026-10-25T00:00:00.000Z",
-  "completed": false,
-  "createdAt": "2026-10-21T07:45:00.000Z",
-  "updatedAt": "2026-10-21T07:45:00.000Z",
-  "__v": 0
-}
-```
-
-#### 2. Update Task
-`PATCH /api/todo/67160ab5f3a09e02c5e31a89`
-```json
-// Request Body:
-{
-  "task": "Review pull request updates and run tests",
-  "date": "2026-10-26"
-}
-
-// Response (200 OK):
-{
-  "_id": "67160ab5f3a09e02c5e31a89",
-  "task": "Review pull request updates and run tests",
-  "date": "2026-10-26T00:00:00.000Z",
-  "completed": false,
-  "createdAt": "2026-10-21T07:45:00.000Z",
-  "updatedAt": "2026-10-21T07:50:00.000Z",
-  "__v": 0
-}
-```
-
-#### 3. Mark Task Completed
-`PUT /api/todo/67160ab5f3a09e02c5e31a89/completed`
-```json
-// Request Body:
-{
-  "completed": true
-}
-
-// Response (200 OK):
-{
-  "_id": "67160ab5f3a09e02c5e31a89",
-  "task": "Review pull request updates and run tests",
-  "date": "2026-10-26T00:00:00.000Z",
-  "completed": true,
-  "createdAt": "2026-10-21T07:45:00.000Z",
-  "updatedAt": "2026-10-21T07:55:00.000Z",
-  "__v": 0
-}
-```
-
-#### 4. Delete Single Task
-`DELETE /api/todo/67160ab5f3a09e02c5e31a89`
-```
-// Response: 204 No Content
-```
-
-#### 5. Clear All Completed Tasks
-`DELETE /api/todo/completed`
-```json
-// Response (200 OK):
-{
-  "message": "Completed todos removed successfully.",
-  "deletedCount": 3
-}
-```
-
-#### Error Response Format
-When input is invalid or a resource is not found:
-```json
-// 400 Bad Request
-{
-  "message": "Task description cannot be empty."
-}
-
-// 404 Not Found
-{
-  "message": "Todo item not found."
-}
-```
-
----
-
-## Testing & Quality Verification
-
-### Run Backend Tests
-The backend includes automated tests covering validation, error handling, 404 routes, and CRUD operations using the built-in Node.js test runner:
 ```bash
 cd Backend
 npm test
 ```
-Result: 28 passing tests (including date requirement, calendar date preservation, completed task edit protection, format validation, and past date rejection).
 
-### Run Frontend Unit Tests
-To test date status calculation, calendar day diff, ISO timestamp extraction, and task editability:
+Frontend:
+
 ```bash
 cd Frontend
 npm test
-```
-Result: 15 passing tests (covering today, tomorrow, yesterday, future dates, ISO timestamps, editability rules, and boundary conditions).
-
-### Run Frontend Linting
-To check code formatting and verify React Hooks & ESLint rules:
-```bash
-cd Frontend
 npm run lint
-```
-Result: 0 errors, 0 warnings.
-
-### Build Frontend Production Assets
-To verify production bundle compilation:
-```bash
-cd Frontend
 npm run build
 ```
-Result: Built successfully without errors.
+
+Latest reported results:
+- Backend: 44 tests passed.
+- Frontend: 20 tests passed.
+- ESLint: 0 errors and 0 warnings.
+- Production build: successful.
+
+## Security
+
+- Passwords are hashed before storage.
+- Todo operations are scoped to the authenticated user.
+- Sessions are stored in MongoDB.
+- Production deployments should use HTTPS and a strong session secret.
+- CORS should allow only the intended frontend origin.
+- Never commit `.env` files or expose database credentials.
+
+## Author
+
+**Sangeet**
+
+GitHub: [Sangeet-30](https://github.com/Sangeet-30)
 
 ---
 
-## Security & Production Best Practices
+*Full-Stack Todo App · Built with React 19, Tailwind CSS, Express & MongoDB*
 
-1. **Environment Separation**: Real `.env` files are excluded by `.gitignore`. Template `.env.example` files are provided for configuration.
-2. **CORS Hardening**: In production, specify explicit client domains in `CORS_ORIGIN` (e.g. `https://todo.yourdomain.com`) instead of wildcard `*`.
-3. **Database Security**: Never commit MongoDB Atlas credentials. Use secure secret management in deployment environments (e.g., Docker secrets, AWS Secrets Manager, Vercel/Render environment variables).
-4. **Input Constraints**: Client and server-side boundaries reject oversized payloads and prevent database injection or malformed ObjectId crashes.
-
+*Built by Sangeet · © 2026 TodoFlow. All rights reserved.*
